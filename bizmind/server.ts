@@ -2,16 +2,23 @@ import express from 'express';
 import cors from 'cors';
 import Anthropic from '@anthropic-ai/sdk';
 import dotenv from 'dotenv';
+import { fileURLToPath } from 'url';
+import path from 'path';
 
-dotenv.config();
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: path.resolve(__dirname, '.env') });
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-});
+const apiKey = process.env.ANTHROPIC_API_KEY;
+if (!apiKey || apiKey === 'sk-ant-xxxxx') {
+  console.error('❌ ANTHROPIC_API_KEY가 설정되지 않았습니다. .env 파일을 확인해주세요.');
+  process.exit(1);
+}
+
+const anthropic = new Anthropic({ apiKey });
 
 const MODEL = 'claude-sonnet-4-20250514';
 
