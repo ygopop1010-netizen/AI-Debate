@@ -4,9 +4,31 @@ import Anthropic from '@anthropic-ai/sdk';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import path from 'path';
+import fs from 'fs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-dotenv.config({ path: path.resolve(__dirname, '.env') });
+
+// .env 파일을 여러 경로에서 찾기
+const envPaths = [
+  path.resolve(__dirname, '.env'),
+  path.resolve(process.cwd(), '.env'),
+  path.resolve(process.cwd(), 'bizmind', '.env'),
+];
+
+let envLoaded = false;
+for (const envPath of envPaths) {
+  if (fs.existsSync(envPath)) {
+    console.log(`✅ .env 파일 발견: ${envPath}`);
+    dotenv.config({ path: envPath });
+    envLoaded = true;
+    break;
+  }
+}
+
+if (!envLoaded) {
+  console.error('❌ .env 파일을 찾을 수 없습니다. 찾아본 경로:');
+  envPaths.forEach((p) => console.error(`   - ${p}`));
+}
 
 const app = express();
 app.use(cors());
@@ -14,7 +36,12 @@ app.use(express.json());
 
 const apiKey = process.env.ANTHROPIC_API_KEY;
 if (!apiKey || apiKey === 'sk-ant-xxxxx') {
-  console.error('❌ ANTHROPIC_API_KEY가 설정되지 않았습니다. .env 파일을 확인해주세요.');
+  console.error('');
+  console.error('❌ ANTHROPIC_API_KEY가 설정되지 않았습니다!');
+  console.error('');
+  console.error('해결 방법: bizmind 폴더 안에 .env 파일을 만들고 아래 내용을 넣으세요:');
+  console.error('ANTHROPIC_API_KEY=sk-ant-api03-여기에본인키');
+  console.error('');
   process.exit(1);
 }
 
