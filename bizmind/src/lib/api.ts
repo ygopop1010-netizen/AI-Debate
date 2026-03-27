@@ -16,11 +16,25 @@ export async function composeTeam(
   });
 
   if (!res.ok) {
-    const err = await res.json();
-    throw new Error(err.error || '팀 구성에 실패했습니다.');
+    let errorMsg = '팀 구성에 실패했습니다.';
+    try {
+      const err = await res.json();
+      errorMsg = err.error || errorMsg;
+    } catch {
+      errorMsg = `서버 오류 (${res.status}): ${await res.text().catch(() => '응답 없음')}`;
+    }
+    throw new Error(errorMsg);
   }
 
-  return res.json();
+  const text = await res.text();
+  if (!text) {
+    throw new Error('서버에서 빈 응답이 돌아왔습니다.');
+  }
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw new Error('서버 응답을 파싱할 수 없습니다: ' + text.slice(0, 200));
+  }
 }
 
 export async function streamMeeting(
@@ -43,8 +57,14 @@ export async function streamMeeting(
     });
 
     if (!res.ok) {
-      const err = await res.json();
-      onError(err.error || '회의 시작에 실패했습니다.');
+      let errorMsg = '회의 시작에 실패했습니다.';
+      try {
+        const err = await res.json();
+        errorMsg = err.error || errorMsg;
+      } catch {
+        errorMsg = `서버 오류 (${res.status}): ${await res.text().catch(() => '응답 없음')}`;
+      }
+      onError(errorMsg);
       return controller;
     }
 

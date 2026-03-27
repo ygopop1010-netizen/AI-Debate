@@ -55,10 +55,12 @@ app.post('/api/compose-team', async (req, res) => {
     const team = JSON.parse(jsonMatch[0]);
     res.json(team);
   } catch (error: unknown) {
-    console.error('Team composition error:', error);
+    console.error('❌ Team composition error:', error);
     const message =
       error instanceof Error ? error.message : 'API 호출 중 오류가 발생했습니다.';
-    res.status(500).json({ error: message });
+    if (!res.headersSent) {
+      res.status(500).json({ error: message });
+    }
   }
 });
 
