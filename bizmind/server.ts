@@ -19,7 +19,39 @@ let envLoaded = false;
 for (const envPath of envPaths) {
   if (fs.existsSync(envPath)) {
     console.log(`✅ .env 파일 발견: ${envPath}`);
-    dotenv.config({ path: envPath });
+
+    // Windows 메모장 UTF-16 인코딩 대응: 직접 파일을 읽어서 파싱
+    let rawContent = fs.readFileSync(envPath);
+
+    // BOM(Byte Order Mark) 제거 및 UTF-16 → UTF-8 변환
+    let content: string;
+    if (rawContent[0] === 0xff && rawContent[1] === 0xfe) {
+      // UTF-16 LE
+      content = rawContent.toString('utf16le').slice(1);
+    } else if (rawContent[0] === 0xfe && rawContent[1] === 0xff) {
+      // UTF-16 BE
+      content = rawContent.swap16().toString('utf16le').slice(1);
+    } else if (rawContent[0] === 0xef && rawContent[1] === 0xbb && rawContent[2] === 0xbf) {
+      // UTF-8 BOM
+      content = rawContent.toString('utf8').slice(1);
+    } else {
+      content = rawContent.toString('utf8');
+    }
+
+    // 직접 환경변수 파싱
+    for (const line of content.split(/\r?\n/)) {
+      const trimmed = line.trim();
+      if (trimmed && !trimmed.startsWith('#')) {
+        const eqIndex = trimmed.indexOf('=');
+        if (eqIndex > 0) {
+          const key = trimmed.slice(0, eqIndex).trim();
+          const value = trimmed.slice(eqIndex + 1).trim();
+          process.env[key] = value;
+          console.log(`   ${key} = ${value.slice(0, 10)}...`);
+        }
+      }
+    }
+
     envLoaded = true;
     break;
   }
